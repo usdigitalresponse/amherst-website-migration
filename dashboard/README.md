@@ -19,6 +19,6 @@ To-do list:
 
 Authors:
 
-* Sennifer Strickland - `inkpixelspaper@gmail.com`
-* Jennifer O'Rorke - `meganororke@gmail.com`
+* Jennifer Strickland - `inkpixelspaper@gmail.com`
+* Megan O'Rorke - `meganororke@gmail.com`
 * Jan Overgoor - `jovergoor@usdigitalresponse.org`
