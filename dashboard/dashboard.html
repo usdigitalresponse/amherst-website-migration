@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" crossorigin="anonymous">
+    <title>Chart.js and Google Sheets example</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Lato%3A400%2C400italic%2C700%2C900&amp;display=swap" rel="stylesheet" nonce="">
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans:400,500|Roboto:300,400,500,700|Source+Code+Pro:400,700&amp;display=swap" rel="stylesheet" nonce="">
+    <link href="https://fonts.googleapis.com/css?family=Open%20Sans%3Ai%2C400&amp;display=swap" rel="stylesheet" nonce="">
+    <style>
+      body {
+        font: 16px rgb(33,33,33) "Open Sans", sans-serif;
+      }
+      header, nav, footer {
+        margin: .5rem auto;
+        outline: thin solid black;
+        padding: .5rem 0;
+        text-align: center;
+      }
+      h1, h2 {
+        color: rgba(61,118,132,1);
+        font-family: "Lato", sans-serif;
+        font-weight: 600;
+        text-align: center;
+      }
+      figure#amherst_covid_case_data {
+        font-family: "Open Sans", sans-serif;
+        margin: 0 auto;
+        padding: 0; 
+        width: 95%; 
+      }
+      figure#amherst_covid_case_data figcaption {
+        border-bottom: thin solid rgba(33,33,33,.5);
+        /* border-top: thin solid rgba(33,33,33,.5); */
+        margin: 0 auto;
+        padding: 1rem 0; 
+        width: 95%; 
+      }
+      figure#amherst_covid_case_data figcaption ul {
+        display: grid;
+        font-family: "Open Sans", sans-serif;
+        grid-template-columns: repeat(auto-fit, minmax(40%, 1fr));
+        grid-gap: .25rem;
+        list-style: none;
+        margin: 1rem auto;
+        padding: 0;
+        text-align: center; 
+      }
+      figure#amherst_covid_case_data figcaption ul li {
+        margin: .5rem 0;
+        padding: 0; 
+      }
+      figure#amherst_covid_case_data figcaption ul li dfn,
+      figure#amherst_covid_case_data figcaption ul li span,
+      figure#amherst_covid_case_data figcaption ul li a {
+        margin: 0 auto;
+        max-width: 150px;
+      }
+      figure#amherst_covid_case_data figcaption span {
+        display: block;
+        font-size: 1.25rem;
+        margin: 0 auto;
+        max-width: 150px;
+        padding: .25rem 0;
+      }
+      figure#amherst_covid_case_data figcaption ul li:nth-of-type(1) span {
+        background-color: rgba(250, 239, 142, 0.692); 
+        text-transform: capitalize;
+      }
+      figure#amherst_covid_case_data figcaption ul li:nth-of-type(2) span {
+        background-color: rgba(179, 230, 255,.5); 
+        text-transform: capitalize;
+      }
+      figure#amherst_covid_case_data figcaption ul li dfn {
+        display: block;
+        font-family: "Lato", sans-serif;
+        font-style: normal;
+        font-weight: bold; 
+      }
+      figure#amherst_covid_case_data figcaption ul li a {
+        color: rgba(61,118,132,1);
+        display: block;
+        font-size: 1rem;
+        padding: .15rem;
+        text-decoration: underline;
+      }
+      figure#amherst_covid_case_data figcaption ul li a:hover,
+      figure#amherst_covid_case_data figcaption ul li a:focus {
+          outline: thin solid rgb(66,133,244);
+      }
+      figure#amherst_covid_case_data canvas {
+        margin: 1rem auto;
+        height: 140px;
+        width: 280px;
+      }
+      @media screen and (min-width: 600px; ) {
+        figure#amherst_covid_case_data canvas {
+            height: 22rem;
+            width: 44rem;
+            max-width: 95%;
+        }
+      }
+    </style>
+
+    <section>
+
+      <figure id="amherst_covid_case_data">
+        <figcaption>
+          <ul role="list">
+            <li role="listitem"><dfn>Vaccine Phase</dfn><span id="stat_phase"></span><a href="https://www.mass.gov/info-details/massachusetts-covid-19-vaccination-phases">Vaccine info</a></li>
+            <li role="listitem"><dfn>COVID Status</dfn><span id="stat_status"></span><a href="https://county.pueblo.org/public-health/covid-19">Code info</a></li>
+          </li>
+          </ul>
+
+          <h2>Amherst COVID Data Dashboard</h2>
+          <ul role="list">
+            <li role="listitem"><dfn>Active Cases</dfn><span id="stat_active"></span></li>
+            <li role="listitem"><dfn>Total Cases</dfn><span id="stat_total"></span></li>
+            <li role="listitem"><dfn>2-Week Difference</dfn><span id="stat_delta"></span></li>
+            <li role="listitem"><dfn>Details</dfn><a href="https://docs.google.com/spreadsheets/d/16YiakYsj_PkZjN6PSnY-6xhUDBjEH4hWkcQQPIcxV3w">View Data Table</a></li>
+          </ul>
+        </figcaption>
+        <canvas id="myChart" aria-hidden="true" role="presentation"></canvas>
+      </figure>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" crossorigin="anonymous"></script>
+
+    <script>
+
+      async function get_data() {
+  
+        // output data structure
+        var data = { 'dates': [], 'raw': [], 'cum': [], 'ma': []}
+  
+        // retrieve data from Google Sheets
+        var sheetId = "16YiakYsj_PkZjN6PSnY-6xhUDBjEH4hWkcQQPIcxV3w";
+        var url = "https://spreadsheets.google.com/feeds/cells/".concat(sheetId, "/1/public/values?alt=json-in-script");
+  
+        let res = await fetch(url)
+          .then(res => res.text())
+          .then(text => text.replace('gdata.io.handleScriptLoaded(', '').slice(0, -2))
+          .then(json => JSON.parse(json).feed.entry);
+  
+        for (var i = 0; i < res.length; i++) {
+          if(res[i].gs$cell.row == "1")
+            continue
+          if(res[i].gs$cell.col == "1")  // dates
+            data['dates'].push(res[i].content.$t);
+          if(res[i].gs$cell.col == "2") { // raw cases
+            var val = parseInt(res[i].content.$t);
+            if (val < 0) val = 0;  // check non-negative
+            data['raw'].push(val);
+          }
+          if(res[i].gs$cell.col == "3")  // cumulative cases
+            data['cum'].push(parseInt(res[i].content.$t));
+          if(res[i].gs$cell.col == "4" & res[i].gs$cell.row == "2")  // vaccine phase
+            data['phase'] = res[i].content.$t;
+          if(res[i].gs$cell.col == "5" & res[i].gs$cell.row == "2")  // covid status
+            data['status'] = res[i].content.$t;
+        }
+        var n = data['raw'].length;
+  
+        // compute 14-day moving average
+        var range = 14;
+        for (var i = 0; i < n; i++) {
+          var val = 0;
+          if (i > range) {
+            // compute sum
+            var arr = data['raw'].slice(i - range + 1, i + 1)
+            var len = arr.length;
+            var sum = 0;
+            while (len--) sum += Number(arr[len]);
+            val = Math.round(sum * 1.0 / range);
+          }
+          data['ma'].push(val);
+        }
+  
+        // compute cumulative sum (for now from google sheets)
+        //var val = 0;
+        //for (var i = 0; i < n; i++) {
+        //  val = val + data['raw'][i];
+        //  data['cum'].push(val);
+        //}
+  
+        //console.log(data);
+        return data
+      }
+
+
+      // This function draws the main graph
+      async function make_plot(data) {
+
+        data = await data;
+        var ctx = document.getElementById('myChart').getContext('2d');
+
+        var myLineChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            datasets:[{
+              label: 'Active cases',
+              borderColor: '#C4C2C2',
+              data: data['raw'],
+              type: 'bar',
+              borderWidth: 2,
+              order: 2
+            },
+            {
+              label: '14-day moving average',
+              borderColor: '#FE6184',
+              data: data['ma'],
+              type: 'line',
+              pointRadius: 0,
+              fill: false,
+              lineTension: 0,
+              borderWidth: 3,
+              order: 1
+            }],
+            labels: data['dates']
+          },
+          options: {
+            legend: {
+              display: true,
+              reverse: true
+            },
+            scales: {
+              xAxes: [{
+                type: 'time',
+                time: {
+                  displayFormats: {
+                    millisecond: 'MM/YY',
+                    second: 'MM/YY',
+                    minute: 'MM/YY',
+                    hour: 'MM/YY',
+                    day: 'MM/YY',
+                    week: 'MM/YY',
+                    month: 'MM/YY',
+                    quarter: 'MM/YY',
+                    year: 'MM/YY'
+                  }
+                },
+                scaleLabel: {
+                  display: true,
+                  fontSize: 16,
+                  labelString: "Date"
+                },
+                gridLines : {
+                  // dont know how to hide, there's a thin border underneath.
+                  //drawBorder: false,
+                  //display: false,
+                  //drawOnChartArea: false,
+                  lineWidth: 0,
+                  zeroLineWidth: 2,
+                  zeroLineColor: "#212020", 
+                  drawTicks: false
+                },
+                ticks: {
+                  maxTicksLimit: 20,
+                  fontSize: 13,
+                  maxRotation: 0,
+                  minRotation: 0,
+                  padding: 5
+                }
+              }],
+              yAxes: [{
+                type: 'linear',
+                gridLines: {
+                  zeroLineWidth: 2,
+                  zeroLineColor: "#212020",
+                  drawTicks: false
+                }, 
+                ticks: {
+                  maxTicksLimit: 10,
+                  fontSize: 14,
+                  padding: 10
+                },
+                scaleLabel: {
+                  display: true,
+                  fontSize: 16,
+                  labelString: 'Active Cases'
+                }
+              }]
+            }
+          },
+          plugins: [{
+             beforeDraw: function(c) {
+                // responsive adjustments here
+                var chartWidth = c.chart.width;    // biggest: 1596 smallest: 428
+                var chartHeight = c.chart.height;  // biggest: 798  smallest: 214
+                c.scales['x-axis-0'].options.ticks.maxTicksLimit = chartWidth / 100;
+                //c.scales['x-axis-0'].options.scaleLabel.fontSize = chartWidth / 100;
+                //c.scales['x-axis-0'].options.ticks.fontSize = chartWidth / 122;
+                //c.scales['y-axis-0'].options.scaleLabel.fontSize = chartWidth / 100;
+                //c.scales['y-axis-0'].options.ticks.fontSize = chartWidth / 122;
+             }
+          }]
+        });
+      }
+
+      // print number as comma
+      function numberWithCommas(x) {
+        // from https://stackoverflow.com/a/2901298
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      }
+
+      // This function updates the numbers in the boxes
+      async function fill_stats(data) {
+        data = await data;
+        var n = data['raw'].length;
+        var total_cases = data['cum'][n - 1];
+        var active_cases = data['raw'][n - 1];
+        var last_ma = data['ma'][n - 14 - 1];
+        var delta = (data['ma'][n - 1] - last_ma) / last_ma;
+        document.getElementById("stat_active").innerHTML = numberWithCommas(active_cases);
+        document.getElementById("stat_total").innerHTML = numberWithCommas(total_cases);
+        document.getElementById("stat_delta").innerHTML = (delta * 100).toFixed(1) + '%';
+        document.getElementById("stat_phase").innerHTML = data['phase'];
+        document.getElementById("stat_status").innerHTML = data['status'];
+      }
+
+      // Call the functions
+      var data = get_data();
+      make_plot(data);
+      fill_stats(data);
+
+    </script>
+
+  </body>
+</html>
