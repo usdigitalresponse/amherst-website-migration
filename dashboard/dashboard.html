@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" crossorigin="anonymous">
     <title>Chart.js and Google Sheets example</title>
 
@@ -66,11 +66,9 @@
         padding: .25rem 0;
       }
       figure#amherst_covid_case_data figcaption ul li:nth-of-type(1) span {
-        background-color: rgba(250, 239, 142, 0.692); 
         text-transform: capitalize;
       }
       figure#amherst_covid_case_data figcaption ul li:nth-of-type(2) span {
-        background-color: rgba(179, 230, 255,.5); 
         text-transform: capitalize;
       }
       figure#amherst_covid_case_data figcaption ul li dfn {
@@ -109,17 +107,15 @@
       <figure id="amherst_covid_case_data">
         <figcaption>
           <ul role="list">
-            <li role="listitem"><dfn>Vaccine Phase</dfn><span id="stat_phase"></span><a href="https://www.mass.gov/info-details/massachusetts-covid-19-vaccination-phases">Vaccine info</a></li>
-            <li role="listitem"><dfn>COVID Status</dfn><span id="stat_status"></span><a href="https://county.pueblo.org/public-health/covid-19">Code info</a></li>
+            <li role="listitem"><dfn>Vaccine Phase</dfn><span id="stat_phase"></span><a href="https://www.mass.gov/info-details/massachusetts-covid-19-vaccination-phases">Phases info</a>
           </li>
           </ul>
 
-          <h2>Amherst COVID Data Dashboard</h2>
+          <h2>Amherst COVID-19 Data Dashboard</h2>
           <ul role="list">
-            <li role="listitem"><dfn>Active Cases</dfn><span id="stat_active"></span></li>
-            <li role="listitem"><dfn>Total Cases</dfn><span id="stat_total"></span></li>
+            <li role="listitem"><dfn>Active Cases in Amherst</dfn><span id="stat_active"></span></li>
+            <li role="listitem"><dfn>Total Cases in Amherst</dfn><span id="stat_total"></span></li>
             <li role="listitem"><dfn>2-Week Difference</dfn><span id="stat_delta"></span></li>
-            <li role="listitem"><dfn>Details</dfn><a href="javascript:makeCSV(data);">Download data</a></li>
           </ul>
         </figcaption>
         <canvas id="myChart" aria-hidden="true" role="presentation"></canvas>
@@ -314,9 +310,17 @@
         var active_cases = data['raw'][n - 1];
         var last_ma = data['ma'][n - 14 - 1];
         var delta = (data['ma'][n - 1] - last_ma) / last_ma;
+        var delta_direction;
+        if (delta > 0) {
+          delta_direction = "&#8593;"
+        } else if (delta < 0) {
+          delta_direction = "&#8595;"
+        } else {
+          delta_direction = ""
+        }
         document.getElementById("stat_active").innerHTML = numberWithCommas(active_cases);
         document.getElementById("stat_total").innerHTML = numberWithCommas(total_cases);
-        document.getElementById("stat_delta").innerHTML = (delta * 100).toFixed(1) + '%';
+        document.getElementById("stat_delta").innerHTML = (delta * 100).toFixed(1) + '% ' + delta_direction
         document.getElementById("stat_phase").innerHTML = data['phase'];
         document.getElementById("stat_status").innerHTML = data['status'];
       }
@@ -343,5 +347,7 @@
 
     </script>
 
+    <p>Data Details: Data is Amherst only. Data for weekends is not always available. Missing data is filled in with data from prior known date. Last updated: Feb 26, 2021. <a href="javascript:makeCSV(data);">Download data</a></p>
+   
   </body>
 </html>
