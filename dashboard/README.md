@@ -12,7 +12,6 @@ To-do list:
 * put vaccine info above dashboard header
 * think how to deal with missing data - leave empty or fill out from the date before?
 * add up/down arrow to "delta" number
-* data link should be view-only, maybe should be a csv file?
 * pull when was last updated from GSheets json
 * add data notes section at the end (amherst only, missing dates rolled over, last updated)
 * make responsive better, test on mobile
