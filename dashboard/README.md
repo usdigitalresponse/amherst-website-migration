@@ -16,7 +16,7 @@ To-do list:
 [x] three rather than two columns
 [x] make graph less full-screen at its largest
 [ ] how to deal with missing data - leave empty or fill out from the date before?
-[ ] pull when was last updated from GSheets json
+[x] pull when was last updated from GSheets json
 [ ] make responsive better, test on mobile
 
 Authors:
