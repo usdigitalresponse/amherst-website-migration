@@ -15,7 +15,7 @@ To-do list:
 [x] add data notes section at the end (amherst only, missing dates rolled over, last updated)
 [x] three rather than two columns
 [x] make graph less full-screen at its largest
-[ ] how to deal with missing data - leave empty or fill out from the date before?
+[x] how to deal with missing data - leave empty or fill out from the date before?
 [x] pull when was last updated from GSheets json
 [ ] make responsive better, test on mobile
 

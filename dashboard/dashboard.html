@@ -128,6 +128,16 @@
 
     <script>
 
+      async function add_day(date){
+        // from https://medium.com/make-it-heady/javascript-handle-date-in-any-timezone-with-daylight-saving-check-182657009310
+        var d = new Date(date);
+        var offset = d.getTimezoneOffset() * 60 * 1000;
+        var utcTime = d.getTime() + offset + 86400000;
+        var nd = new Date(utcTime);
+        var s = nd.toISOString().slice(0, 10);
+        return s
+      }
+
       async function get_data() {
   
         // output data structure
@@ -145,8 +155,22 @@
         for (var i = 0; i < res.length; i++) {
           if(res[i].gs$cell.row == "1")
             continue
-          if(res[i].gs$cell.col == "1")  // dates
-            data['dates'].push(res[i].content.$t);
+          if(res[i].gs$cell.col == "1") { // dates
+            var date = res[i].content.$t;
+            if (data['dates'].length > 1) {
+              // if dates are missing from sequence, fill in missing rows
+              var next_date = await add_day(data['dates'][data['dates'].length - 1]);
+              // while is risky! can crash browser if format is wrong...
+              while (date != next_date) {
+                // take last day's data
+                data['dates'].push(next_date);
+                data['raw'].push(data['raw'][data['raw'].length - 1]);
+                data['cum'].push(data['cum'][data['cum'].length - 1]);
+                var next_date = await add_day(data['dates'][data['dates'].length - 1]);
+              }
+            }
+            data['dates'].push(date);
+          }
           if(res[i].gs$cell.col == "2") { // raw cases
             var val = parseInt(res[i].content.$t);
             if (val < 0) val = 0;  // check non-negative
