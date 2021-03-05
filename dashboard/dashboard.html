@@ -158,15 +158,16 @@
           if(res[i].gs$cell.col == "1") { // dates
             var date = res[i].content.$t;
             if (data['dates'].length > 1) {
-              // if dates are missing from sequence, fill in missing rows
+              // if dates are missing from sequence, fill in missing rows (at most 3)
               var next_date = await add_day(data['dates'][data['dates'].length - 1]);
-              // while is risky! can crash browser if format is wrong...
-              while (date != next_date) {
+              var it = 0  ;            
+              while (date != next_date && it < 3) {
                 // take last day's data
                 data['dates'].push(next_date);
                 data['raw'].push(data['raw'][data['raw'].length - 1]);
                 data['cum'].push(data['cum'][data['cum'].length - 1]);
                 var next_date = await add_day(data['dates'][data['dates'].length - 1]);
+                it += 1;
               }
             }
             data['dates'].push(date);
