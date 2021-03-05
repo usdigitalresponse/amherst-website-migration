@@ -41,7 +41,7 @@
       figure#amherst_covid_case_data figcaption ul {
         display: grid;
         font-family: "Open Sans", sans-serif;
-        grid-template-columns: repeat(auto-fit, minmax(40%, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(30%, 1fr));
         grid-gap: .25rem;
         list-style: none;
         margin: 1rem auto;
@@ -104,7 +104,7 @@
 
     <section>
 
-      <figure id="amherst_covid_case_data">
+      <figure id="amherst_covid_case_data" style='max-width: 1000px;'>
         <figcaption>
           <ul role="list">
             <li role="listitem"><dfn>Vaccine Phase</dfn><span id="stat_phase"></span><a href="https://www.mass.gov/info-details/massachusetts-covid-19-vaccination-phases">Phases info</a>
@@ -119,6 +119,7 @@
           </ul>
         </figcaption>
         <canvas id="myChart" aria-hidden="true" role="presentation"></canvas>
+        <div><b>Data details</b>: Data is Amherst only. Data for weekends is not always available. Missing data is filled in with data from prior known date. Download data <a href="javascript:makeCSV(data);">here</a>. Data was last updated at <span id="last_updated"></span>. </div><br/>
       </figure>
     </section>
 
@@ -126,6 +127,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js" crossorigin="anonymous"></script>
 
     <script>
+
+      async function add_day(date){
+        // from https://medium.com/make-it-heady/javascript-handle-date-in-any-timezone-with-daylight-saving-check-182657009310
+        var d = new Date(date);
+        var offset = d.getTimezoneOffset() * 60 * 1000;
+        var utcTime = d.getTime() + offset + 86400000;
+        var nd = new Date(utcTime);
+        var s = nd.toISOString().slice(0, 10);
+        return s
+      }
 
       async function get_data() {
   
@@ -140,12 +151,26 @@
           .then(res => res.text())
           .then(text => text.replace('gdata.io.handleScriptLoaded(', '').slice(0, -2))
           .then(json => JSON.parse(json).feed.entry);
-  
+
         for (var i = 0; i < res.length; i++) {
           if(res[i].gs$cell.row == "1")
             continue
-          if(res[i].gs$cell.col == "1")  // dates
-            data['dates'].push(res[i].content.$t);
+          if(res[i].gs$cell.col == "1") { // dates
+            var date = res[i].content.$t;
+            if (data['dates'].length > 1) {
+              // if dates are missing from sequence, fill in missing rows
+              var next_date = await add_day(data['dates'][data['dates'].length - 1]);
+              // while is risky! can crash browser if format is wrong...
+              while (date != next_date) {
+                // take last day's data
+                data['dates'].push(next_date);
+                data['raw'].push(data['raw'][data['raw'].length - 1]);
+                data['cum'].push(data['cum'][data['cum'].length - 1]);
+                var next_date = await add_day(data['dates'][data['dates'].length - 1]);
+              }
+            }
+            data['dates'].push(date);
+          }
           if(res[i].gs$cell.col == "2") { // raw cases
             var val = parseInt(res[i].content.$t);
             if (val < 0) val = 0;  // check non-negative
@@ -157,6 +182,8 @@
             data['phase'] = res[i].content.$t;
           if(res[i].gs$cell.col == "5" & res[i].gs$cell.row == "2")  // covid status
             data['status'] = res[i].content.$t;
+          if(res[i].gs$cell.col == "6" & res[i].gs$cell.row == "2")  // last updated
+            data['updated'] = res[i].content.$t;
         }
         var n = data['raw'].length;
   
@@ -310,19 +337,19 @@
         var active_cases = data['raw'][n - 1];
         var last_ma = data['ma'][n - 14 - 1];
         var delta = (data['ma'][n - 1] - last_ma) / last_ma;
-        var delta_direction;
-        if (delta > 0) {
-          delta_direction = "&#8593;"
-        } else if (delta < 0) {
-          delta_direction = "&#8595;"
-        } else {
-          delta_direction = ""
-        }
         document.getElementById("stat_active").innerHTML = numberWithCommas(active_cases);
         document.getElementById("stat_total").innerHTML = numberWithCommas(total_cases);
-        document.getElementById("stat_delta").innerHTML = (delta * 100).toFixed(1) + '% ' + delta_direction
+        document.getElementById("stat_delta").innerHTML = (delta * 100).toFixed(1) + '%';
+        // add arrow
+        if (delta > 0) {
+          document.getElementById("stat_delta").innerHTML += " &#8593;";
+          document.getElementById("stat_delta").style.color += "red";
+        } else if (delta < 0) {
+          document.getElementById("stat_delta").innerHTML += " &#8595;";
+          document.getElementById("stat_delta").style.color += "green";
+        }
         document.getElementById("stat_phase").innerHTML = data['phase'];
-        document.getElementById("stat_status").innerHTML = data['status'];
+        document.getElementById("last_updated").innerHTML = data['updated'];
       }
 
       // This function creates a csv-export of the data
@@ -346,8 +373,5 @@
       fill_stats(data);
 
     </script>
-
-    <p>Data Details: Data is Amherst only. Data for weekends is not always available. Missing data is filled in with data from prior known date. Last updated: Feb 26, 2021. <a href="javascript:makeCSV(data);">Download data</a></p>
-   
   </body>
 </html>
